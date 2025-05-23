@@ -7,6 +7,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 import os
 from pymysql.cursors import DictCursor
 import time
+import requests
 
 # Inisialisasi aplikasi Flask
 app = Flask(__name__)
@@ -83,23 +84,69 @@ breed_dict = None
 categorical_features = ['jenis', 'breed', 'gender', 'usia']
 numeric_features = ['warna']
 
+def get_information_id():
+    try:
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT id, name FROM pet_categories")
+            real_categories = pd.DataFrame(cursor.fetchall())
+            
+            cursor.execute("SELECT id, name FROM breeds")
+            real_breeds = pd.DataFrame(cursor.fetchall())
+            
+            cursor.execute("SELECT id, category FROM ages")
+            real_ages = pd.DataFrame(cursor.fetchall())
+
+        # Combine all information into a dictionary
+        all_data = {
+            'jenis': real_categories,
+            'breeds': real_breeds,
+            'ages': real_ages,
+        }
+
+        return all_data
+    except Exception as e:
+        app.logger.error(f"Error mengambil data: {str(e)}")
+        return None
+
+def get_data_from_api():
+    try:
+        response = requests.get('https://backendcapstone.zeabur.app/api/pets')
+        if response.status_code == 200:
+            data = response.json()['data']
+            df = pd.DataFrame(data)[['id','pet_category_id' ,'pet_name', 'breed_id', 'gender', 'age_id', 'color_count']]
+
+            # Get breed and age mappings
+            mappings = get_information_id()
+            if mappings:
+                # Replace breed_id with breed name
+                category_dict = dict(zip(mappings['jenis']['id'], mappings['jenis']['name']))
+                df['pet_category_id'] = df['pet_category_id'].map(category_dict)
+
+                breed_dict = dict(zip(mappings['breeds']['id'], mappings['breeds']['name']))
+                df['breed'] = df['breed_id'].map(breed_dict)
+
+                # Replace age_id with age category
+                age_dict = dict(zip(mappings['ages']['id'], mappings['ages']['category']))
+                df['age'] = df['age_id'].map(age_dict)
+
+                # Drop the original ID columns
+                df = df.drop(['breed_id', 'age_id'], axis=1)
+                df = df[['id', 'pet_name', 'pet_category_id', 'breed', 'gender', 'age', 'color_count']]
+                df.columns = ['id', 'nama', 'jenis', 'breed', 'gender', 'usia', 'warna']
+                return df
+        raise Exception("Failed to fetch data from API or process mappings")
+    except Exception as e:
+        app.logger.error(f"Error fetching data from API: {str(e)}")
+        raise
+
 def initialize_ml_components():
     """Initialize ML components with proper error handling"""
     global df, encoder, feature_vectors, breed_dict
     
     try:
-        # Membuat koneksi menggunakan pymysql
-        connection = get_db_connection()
-        
-        query = "SELECT id, nama, jenis, breed, gender, usia, warna FROM Dataset"
-        # Menggunakan cursor untuk mengeksekusi query
-        with connection.cursor() as cursor:
-            cursor.execute(query)
-            # Mengambil semua hasil query
-            results = cursor.fetchall()
-            
-            # Mengonversi hasil menjadi DataFrame Pandas
-            df = pd.DataFrame(results)
+        # Get data from API instead of direct database query
+        df = get_data_from_api()
         
         # Inisialisasi dan fit OneHotEncoder
         encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
@@ -142,7 +189,7 @@ def recommend_by_preferences(preferences: dict, top_n=5):
         # Siapkan hasil rekomendasi
         rekomendasi = df.iloc[top_indices].copy()
         rekomendasi['similarity_score'] = similarity_scores[top_indices]
-        return rekomendasi[['id', 'nama', 'jenis', 'breed', 'gender', 'usia', 'warna', 'similarity_score']]
+        return rekomendasi[['id', 'similarity_score']]
     except Exception as e:
         app.logger.error(f"Error in recommendation: {str(e)}")
         raise
@@ -162,16 +209,13 @@ def save_recommendation_to_db(recommendations):
             # Query untuk insert data
             query = """
             INSERT INTO result
-            (ID, Nama, Jenis, Breed, Gender, Usia, Warna, `Skor kemiripan`)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            (ID, `Skor kemiripan`)
+            VALUES (%s, %s)
             """
             
             # Insert setiap rekomendasi
             for rec in recommendations:
-                values = (
-                    rec['id'], rec['nama'], rec['jenis'], rec['breed'],
-                    rec['gender'], rec['usia'], rec['warna'], rec['similarity_score']
-                )
+                values = (rec['id'], rec['similarity_score'])
                 cursor.execute(query, values)
 
             connection.commit()
