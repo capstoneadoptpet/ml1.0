@@ -10,4 +10,5 @@ COPY . .
 
 EXPOSE 5000
 
+# Change this line to match render.yaml
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]

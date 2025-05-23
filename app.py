@@ -55,9 +55,29 @@ def get_data_from_db():
         return None
 
 # Modify the data loading section to handle database errors gracefully
-try:
-    # Membaca dataset dari database
-    df = get_data_from_db()
+# At the beginning of your app.py, add this function
+def get_data_with_fallback():
+    try:
+        # Try to get data from database first
+        db_data = get_data_from_db()
+        if db_data is not None and not db_data.empty:
+            print("Successfully loaded data from database")
+            return db_data
+    except Exception as e:
+        print(f"Database error: {e}")
+    
+    # Fallback to CSV if database fails
+    try:
+        print("Falling back to CSV data")
+        csv_path = os.path.join(os.path.dirname(__file__), 'modified_dataframe.csv')
+        return pd.read_csv(csv_path)
+    except Exception as e:
+        print(f"CSV fallback error: {e}")
+        # Return empty DataFrame as last resort
+        return pd.DataFrame(columns=['id', 'nama', 'jenis', 'breed', 'gender', 'usia', 'warna'])
+
+# Then replace your current data loading code with:
+df = get_data_with_fallback()
     if df is None or df.empty:
         # Use a fallback dataset or show a friendly error
         print("Warning: Using empty dataset as fallback")
