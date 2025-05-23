@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekomendasi Hewan</title>
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container py-5">
+    <h1 class="mb-4 text-center">🐾 Rekomendasi Hewan Berdasarkan Preferensi</h1>
+
+    <!-- Form Preferensi -->
+    <form method="POST" class="row g-3 mb-5">
+        <div class="col-md-4">
+            <label for="jenis" class="form-label">Jenis</label>
+            <select name="jenis" id="jenis" class="form-select" required>
+                <option value="" disabled selected>Pilih jenis</option>
+                {% for jenis in jenis_list %}
+                <option value="{{ jenis }}">{{ jenis }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="breed" class="form-label">Breed</label>
+            <select name="breed" id="breed" class="form-select" required>
+                <option value="" disabled selected>Pilih breed</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="gender" class="form-label">Gender</label>
+            <select name="gender" class="form-select" required>
+                <option value="jantan">Jantan</option>
+                <option value="betina">Betina</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="usia" class="form-label">Usia</label>
+            <select name="usia" class="form-select" required>
+                <option value="muda">Muda</option>
+                <option value="dewasa">Dewasa</option>
+                <option value="senior">Senior</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="warna" class="form-label">Warna (angka)</label>
+            <input type="number" name="warna" id="warna" class="form-control" placeholder="contoh: 2" required min="1" max="4">
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100">🔍 Cari Rekomendasi</button>
+        </div>
+    </form>
+
+    <!-- Tabel Hasil -->
+    {% if rekomendasi %}
+    <h2 class="mb-3">📋 Hasil Rekomendasi</h2>
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle text-center">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Nama</th>
+                    <th>Jenis</th>
+                    <th>Breed</th>
+                    <th>Gender</th>
+                    <th>Usia</th>
+                    <th>Warna</th>
+                    <th>Skor Kemiripan</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rekomendasi %}
+                <tr>
+                    <td>{{ r.id }}</td>
+                    <td>{{ r.nama }}</td>
+                    <td>{{ r.jenis }}</td>
+                    <td>{{ r.breed }}</td>
+                    <td>
+                        <span class="badge {% if r.gender == 'jantan' %}bg-primary{% else %}bg-pink{% endif %}">
+                            {{ r.gender }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">{{ r.usia }}</span>
+                    </td>
+                    <td>{{ r.warna }}</td>
+                    <td><strong>{{ "%.4f"|format(r.similarity_score) }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Fetch Breed Dinamis -->
+<script>
+    document.getElementById('jenis').addEventListener('change', function () {
+        const jenis = this.value;
+        fetch(`/get_breeds?jenis=${jenis}`)
+            .then(response => response.json())
+            .then(data => {
+                const breedSelect = document.getElementById('breed');
+                breedSelect.innerHTML = '<option value="" disabled selected>Pilih breed</option>';
+                data.forEach(breed => {
+                    const option = document.createElement('option');
+                    option.value = breed;
+                    option.textContent = breed;
+                    breedSelect.appendChild(option);
+                });
+            });
+    });
+</script>
+
+<!-- Custom Pink Badge (karena Bootstrap tidak punya class bg-pink) -->
+<style>
+    .bg-pink {
+        background-color: #f78da7 !important;
+        color: white;
+    }
+</style>
+</body>
+</html>
