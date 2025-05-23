@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics.pairwise import cosine_similarity
-import osimport
+import os  # Fixed duplicate import
 
 # === Load dataset ===
 df = pd.read_csv(os.path.join(os.path.dirname(__file__), 'modified_dataframe.csv'))
