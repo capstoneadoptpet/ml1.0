@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify
 import pymysql
 import pandas as pd
 import numpy as np
@@ -187,27 +187,19 @@ def save_recommendation_to_db(recommendations):
 # ROUTES
 # ============================================================================
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
-    """Halaman utama dengan form input"""
-    try:
-        rekomendasi = None
-        if request.method == 'POST':
-            user_input = {
-                'jenis': request.form['jenis'],
-                'breed': request.form['breed'],
-                'gender': request.form['gender'],
-                'usia': request.form['usia'],
-                'warna': int(request.form['warna'])
-            }
-            rekomendasi = recommend_by_preferences(user_input, top_n=10).to_dict(orient='records')
-            save_recommendation_to_db(rekomendasi)
+    """API root endpoint"""
+    return jsonify({
+        "status": "ok",
+        "message": "Pet Recommendation API is running",
+        "endpoints": {
+            "health": "/health",
+            "recommend": "/api/recommend",
+            "get_breeds": "/get_breeds"
+        }
+    })
 
-        jenis_list = list(breed_dict.keys())
-        return render_template('index.html', rekomendasi=rekomendasi, jenis_list=jenis_list)
-    except Exception as e:
-        app.logger.error(f"Error in index route: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/get_breeds')
 def get_breeds():
@@ -257,6 +249,7 @@ def api_recommend():
 # ============================================================================
 
 if __name__ == '__main__':
-    # Disable debug mode in production
+    # Get port from environment with fallback
+    port = int(os.getenv('PORT', 5000))
     debug_mode = os.getenv('FLASK_ENV') == 'development'
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)
