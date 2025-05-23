@@ -54,62 +54,23 @@ def get_data_from_db():
         print(f"Terjadi kesalahan saat menghubungkan ke database: {e}")
         return None
 
-# Modify the data loading section to handle database errors gracefully
-# At the beginning of your app.py, add this function
-def get_data_with_fallback():
-    try:
-        # Try to get data from database first
-        db_data = get_data_from_db()
-        if db_data is not None and not db_data.empty:
-            print("Successfully loaded data from database")
-            return db_data
-    except Exception as e:
-        print(f"Database error: {e}")
-    
-    # Fallback to CSV if database fails
-    try:
-        print("Falling back to CSV data")
-        csv_path = os.path.join(os.path.dirname(__file__), 'modified_dataframe.csv')
-        return pd.read_csv(csv_path)
-    except Exception as e:
-        print(f"CSV fallback error: {e}")
-        # Return empty DataFrame as last resort
-        return pd.DataFrame(columns=['id', 'nama', 'jenis', 'breed', 'gender', 'usia', 'warna'])
+# Membaca dataset dari database
+df = get_data_from_db()
+if df is None:
+    raise Exception("Gagal mengambil data dari database")
 
-# Then replace your current data loading code with:
-df = get_data_with_fallback()
-    if df is None or df.empty:
-        # Use a fallback dataset or show a friendly error
-        print("Warning: Using empty dataset as fallback")
-        df = pd.DataFrame(columns=['id', 'nama', 'jenis', 'breed', 'gender', 'usia', 'warna'])
-        
-    # Mendefinisikan fitur untuk model
-    categorical_features = ['jenis', 'breed', 'gender', 'usia']
-    numeric_features = ['warna']
-    
-    # Only proceed with model training if we have data
-    if not df.empty:
-        # Inisialisasi dan fit OneHotEncoder
-        encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-        encoded_cat = encoder.fit_transform(df[categorical_features])
-        numeric_array = df[numeric_features].to_numpy()
-        feature_vectors = np.hstack([encoded_cat, numeric_array])
-        
-        # Membuat dictionary mapping jenis hewan ke breed-nya
-        breed_dict = df.groupby('jenis')['breed'].unique().apply(list).to_dict()
-    else:
-        # Initialize empty structures if no data
-        encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-        feature_vectors = np.array([])
-        breed_dict = {}
-        
-except Exception as e:
-    print(f"Error initializing application: {e}")
-    # Initialize with empty structures
-    df = pd.DataFrame(columns=['id', 'nama', 'jenis', 'breed', 'gender', 'usia', 'warna'])
-    encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
-    feature_vectors = np.array([])
-    breed_dict = {}
+# Mendefinisikan fitur untuk model
+categorical_features = ['jenis', 'breed', 'gender', 'usia']
+numeric_features = ['warna']
+
+# Inisialisasi dan fit OneHotEncoder
+encoder = OneHotEncoder(sparse_output=False, handle_unknown='ignore')
+encoded_cat = encoder.fit_transform(df[categorical_features])
+numeric_array = df[numeric_features].to_numpy()
+feature_vectors = np.hstack([encoded_cat, numeric_array])
+
+# Membuat dictionary mapping jenis hewan ke breed-nya
+breed_dict = df.groupby('jenis')['breed'].unique().apply(list).to_dict()
 
 # ============================================================================ 
 # FUNGSI REKOMENDASI
@@ -227,56 +188,6 @@ def get_breeds():
 def api_recommend():
     """Endpoint API untuk rekomendasi via POST JSON"""
     data = request.get_json()
-
-    # Validasi input
-    required_fields = ['jenis', 'breed', 'gender', 'usia', 'warna']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Missing one or more required fields.'}), 400
-
-    try:
-        user_input = {
-            'jenis': data['jenis'],
-            'breed': data['breed'],
-            'gender': data['gender'],
-            'usia': data['usia'],
-            'warna': int(data['warna'])
-        }
-
-        hasil_rekomendasi = recommend_by_preferences(user_input, top_n=10)
-        recommendations = hasil_rekomendasi.to_dict(orient='records')
-        
-        # Simpan ke database
-        save_recommendation_to_db(recommendations)
-        return jsonify(recommendations)
-
-    except Exception as e:
-        print("error: ", e)
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/health')
-def health_check():
-    """Health check endpoint for monitoring"""
-    status = {
-        'status': 'ok',
-        'database_connected': False
-    }
-    
-    try:
-        # Test database connection
-        connection = pymysql.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=database,
-            port=port,
-            connect_timeout=5
-        )
-        connection.close()
-        status['database_connected'] = True
-    except Exception as e:
-        status['error'] = str(e)
-        
-    return jsonify(status)
 
     # Validasi input
     required_fields = ['jenis', 'breed', 'gender', 'usia', 'warna']
