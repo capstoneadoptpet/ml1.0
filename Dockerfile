@@ -14,7 +14,7 @@ EXPOSE ${PORT}
 
 # Configure Gunicorn with proper timeout and worker settings
 CMD gunicorn --bind 0.0.0.0:${PORT} \
-    --workers=2 \
+    --workers=1 \
     --timeout=120 \
     --keep-alive=120 \
     --access-logfile=- \
