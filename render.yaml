@@ -3,7 +3,7 @@ services:
     name: capstone-api
     env: python
     buildCommand: ""
-    startCommand: gunicorn app:app
+    startCommand: gunicorn --bind 0.0.0.0:5000 --workers=2 --timeout=120 app:app
     envVars:
       - key: FLASK_ENV
         value: production
