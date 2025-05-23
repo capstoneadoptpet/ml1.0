@@ -8,7 +8,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 5000
+ENV PORT=5000
+EXPOSE ${PORT}
 
 # Change this line to match render.yaml
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
