@@ -198,34 +198,34 @@ def recommend_by_preferences(preferences: dict, top_n=5):
 # FUNGSI DATABASE
 # ============================================================================
 
-def save_recommendation_to_db(recommendations):
-    """
-    Menyimpan hasil rekomendasi ke database dengan proper error handling
-    """
-    connection = None
-    try:
-        connection = get_db_connection()
-        with connection.cursor() as cursor:
-            # Query untuk insert data
-            query = """
-            INSERT INTO result
-            (ID, `Skor kemiripan`)
-            VALUES (%s, %s)
-            """
+# def save_recommendation_to_db(recommendations):
+#     """
+#     Menyimpan hasil rekomendasi ke database dengan proper error handling
+#     """
+#     connection = None
+#     try:
+#         connection = get_db_connection()
+#         with connection.cursor() as cursor:
+#             # Query untuk insert data
+#             query = """
+#             INSERT INTO result
+#             (ID, `Skor kemiripan`)
+#             VALUES (%s, %s)
+#             """
             
-            # Insert setiap rekomendasi
-            for rec in recommendations:
-                values = (rec['id'], rec['similarity_score'])
-                cursor.execute(query, values)
+#             # Insert setiap rekomendasi
+#             for rec in recommendations:
+#                 values = (rec['id'], rec['similarity_score'])
+#                 cursor.execute(query, values)
 
-            connection.commit()
-            return True
+#             connection.commit()
+#             return True
             
-    except Exception as e:
-        app.logger.error(f"Error saving to database: {str(e)}")
-        if connection:
-            connection.rollback()
-        return False
+#     except Exception as e:
+#         app.logger.error(f"Error saving to database: {str(e)}")
+#         if connection:
+#             connection.rollback()
+#         return False
 
 # ============================================================================ 
 # ROUTES
@@ -278,9 +278,9 @@ def api_recommend():
         hasil_rekomendasi = recommend_by_preferences(user_input, top_n=10)
         recommendations = hasil_rekomendasi.to_dict(orient='records')
         
-        # Simpan ke database
-        if not save_recommendation_to_db(recommendations):
-            app.logger.warning("Failed to save recommendations to database")
+        # # Simpan ke database
+        # if not save_recommendation_to_db(recommendations):
+        #     app.logger.warning("Failed to save recommendations to database")
             
         return jsonify(recommendations)
 
