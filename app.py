@@ -20,7 +20,7 @@ app = Flask(__name__)
 host = os.getenv('DB_HOST', '43.156.249.217')
 user = os.getenv('DB_USER', 'root')
 password = os.getenv('DB_PASSWORD', '473N8ZJU25aGsr6K10DWBhCzFo9fHOMA')
-database = os.getenv('DB_NAME', 'ml')
+database = os.getenv('DB_NAME', 'capstone2')
 port = int(os.getenv('DB_PORT', '30201'))
 
 # Database connection pool configuration
@@ -111,7 +111,7 @@ def get_information_id():
 
 def get_data_from_api():
     try:
-        response = requests.get('https://backendcapstone.zeabur.app/api/pets')
+        response = requests.get('https://backendcapstoneproject.zeabur.app/api/pets')
         if response.status_code == 200:
             data = response.json()['data']
             df = pd.DataFrame(data)[['id','pet_category_id' ,'pet_name', 'breed_id', 'gender', 'age_id', 'color_count']]
