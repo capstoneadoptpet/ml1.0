@@ -275,7 +275,7 @@ def api_recommend():
             'warna': int(data['warna'])
         }
 
-        hasil_rekomendasi = recommend_by_preferences(user_input, top_n=10)
+        hasil_rekomendasi = recommend_by_preferences(user_input, top_n=4)
         recommendations = hasil_rekomendasi.to_dict(orient='records')
         
         # # Simpan ke database
